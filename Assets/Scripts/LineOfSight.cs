@@ -2,46 +2,66 @@
 
 public class LineOfSight : MonoBehaviour
 {
-    [Header("Parámetros de visión")]
-    public float viewDistance = 12f;
-    [Range(0f, 360f)]
-    public float fieldOfViewAngle = 110f;
-    public LayerMask obstacleLayer;
-    public Vector3 eyeOffset = new Vector3(0f, 1.6f, 0f);
+    public Transform reference;
+    public float range = 12f;
+    public float angle = 110f;
+    public LayerMask obsMask;
 
     public bool HasLOS(Transform target)
     {
         if (target == null) return false;
 
-        Vector3 eyePos = transform.position + eyeOffset;
-        Vector3 targetPos = target.position + Vector3.up * 1.0f;
-        Vector3 dir = targetPos - eyePos;
-        float dist = dir.magnitude;
-
-        if (dist > viewDistance) return false;
-
-        float angle = Vector3.Angle(transform.forward, dir.normalized);
-        if (angle > fieldOfViewAngle * 0.5f) return false;
-
-        if (Physics.Raycast(eyePos, dir.normalized, out RaycastHit hit, dist, obstacleLayer))
-            return false;
-
-        return true;
+        return CheckRange(target)
+            && CheckAngle(target)
+            && CheckView(target);
     }
 
-    private void OnDrawGizmosSelected()
+    public bool CheckRange(Transform target)
     {
-        Vector3 eyePos = transform.position + eyeOffset;
-        float halfFOV = fieldOfViewAngle * 0.5f;
+        float distanceToTarget = (target.position - Origin).sqrMagnitude;
+        return distanceToTarget <= range * range;
+    }
 
-        Gizmos.color = new Color(1f, 1f, 0f, 0.2f);
-        Gizmos.DrawWireSphere(eyePos, viewDistance);
+    public bool CheckAngle(Transform target)
+    {
+        Vector3 dirToTarget = target.position - Origin;
+        float angleToTarget = Vector3.Angle(dirToTarget, Forward);
+        return angleToTarget <= angle / 2f;
+    }
 
-        Gizmos.color = Color.cyan;
-        Vector3 leftBound = Quaternion.Euler(0, -halfFOV, 0) * transform.forward;
-        Vector3 rightBound = Quaternion.Euler(0, halfFOV, 0) * transform.forward;
-        Gizmos.DrawLine(eyePos, eyePos + leftBound * viewDistance);
-        Gizmos.DrawLine(eyePos, eyePos + rightBound * viewDistance);
-        Gizmos.DrawLine(eyePos, eyePos + transform.forward * viewDistance);
+    public bool CheckView(Transform target)
+    {
+        Vector3 dirToTarget = target.position - Origin;
+        return !Physics.Raycast(Origin, dirToTarget.normalized, dirToTarget.magnitude, obsMask);
+    }
+
+    private Vector3 Origin
+    {
+        get
+        {
+            if (reference == null) return transform.position;
+            return reference.position;
+        }
+    }
+
+    private Vector3 Forward
+    {
+        get
+        {
+            if (reference == null) return transform.forward;
+            return reference.forward;
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Color myColor = Color.blue;
+        myColor.a = 0.5f;
+        Gizmos.color = myColor;
+        Gizmos.DrawWireSphere(Origin, range);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawRay(Origin, Quaternion.Euler(0, angle / 2f, 0) * Forward * range);
+        Gizmos.DrawRay(Origin, Quaternion.Euler(0, -angle / 2f, 0) * Forward * range);
     }
 }
