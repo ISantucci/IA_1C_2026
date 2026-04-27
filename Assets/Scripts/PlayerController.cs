@@ -7,10 +7,6 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 12f;
 
-    [Header("Objetivo")]
-    public Transform pointB;
-    public float goalRadius = 1.8f;
-
     private Rigidbody rb;
     private bool gameOver;
 
@@ -20,12 +16,6 @@ public class PlayerController : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezeRotationX
                        | RigidbodyConstraints.FreezeRotationZ
                        | RigidbodyConstraints.FreezePositionY;
-    }
-
-    private void Update()
-    {
-        if (gameOver) return;
-        CheckGoal();
     }
 
     private void FixedUpdate()
@@ -48,16 +38,6 @@ public class PlayerController : MonoBehaviour
         else
         {
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
-        }
-    }
-
-    private void CheckGoal()
-    {
-        if (pointB == null) return;
-        if (Vector3.Distance(transform.position, pointB.position) <= goalRadius)
-        {
-            gameOver = true;
-            GameManager.Instance?.OnPlayerWin();
         }
     }
 
