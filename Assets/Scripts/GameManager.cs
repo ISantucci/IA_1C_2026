@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        foreach (var npc in FindObjectsOfType<NPCController>())
+        foreach (var npc in Object.FindObjectsByType<NPCController>(FindObjectsSortMode.None))
         {
             npc.OnAttackPlayer += HandleNPCAttack;
             Debug.Log($"[GameManager] NPC registrado: {npc.name} ({npc.enemyType} - {npc.groupName})");
@@ -46,7 +46,7 @@ public class GameManager : MonoBehaviour
         if (gameOver) return;
         gameOver = true;
         Debug.Log("[GameManager] DERROTA. El jugador fue capturado.");
-        FindObjectOfType<PlayerController>()?.SetGameOver();
+        Object.FindFirstObjectByType<PlayerController>()?.SetGameOver();
         losePanel?.SetActive(true);
         Time.timeScale = 0f;
     }

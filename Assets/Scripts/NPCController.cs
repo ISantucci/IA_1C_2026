@@ -1,5 +1,4 @@
-﻿using Unity.IO.LowLevel.Unsafe;
-using UnityEngine;
+﻿using UnityEngine;
 
 public enum EnemyType { Guard, Scout }
 public enum NPCStateID { Patrol, Idle, RunAway, Attack }
@@ -23,7 +22,11 @@ public class NPCController : SteeringAgent
     public float attackRange = 1.8f;
     public float combatSpeedMultiplier = 1.5f;
 
+    [Header("Scout Cooldown")]
+    public float runAwayCooldownDuration = 5f;
+
     public int CurrentWaypointIndex { get; set; }
+    public int LastPatrolWaypointIndex { get; set; } = -1;
     public bool PatrolForward { get; set; } = true;
     public int PatrolCycleCount { get; set; }
     public float IdleTimer { get; set; }
@@ -41,6 +44,10 @@ public class NPCController : SteeringAgent
     private AttackState attackState;
 
     private DecisionTree decisionTree;
+    private Animator animator;
+
+    private float runAwayCooldownTimer = 0f;
+    public bool RunAwayCooldownActive => runAwayCooldownTimer > 0f;
 
     public System.Action OnPlayerDetected;
     public System.Action<NPCController> OnAttackPlayer;
@@ -49,6 +56,7 @@ public class NPCController : SteeringAgent
     {
         base.Awake();
         LOS = GetComponent<LineOfSight>();
+        animator = GetComponentInChildren<Animator>();
 
         patrolState = new PatrolState(this);
         idleState = new IdleState(this);
@@ -63,6 +71,9 @@ public class NPCController : SteeringAgent
 
     private void Update()
     {
+        if (runAwayCooldownTimer > 0f)
+            runAwayCooldownTimer -= Time.deltaTime;
+
         decisionTree.Execute();
         SyncFSM();
         fsm.Update();
@@ -88,7 +99,7 @@ public class NPCController : SteeringAgent
         );
 
         var root = new ConditionNode(
-            () => PlayerVisible,
+            () => PlayerVisible && !RunAwayCooldownActive && CurrentStateID != NPCStateID.RunAway,
             onPlayerVisible,
             doNothing
         );
@@ -96,16 +107,29 @@ public class NPCController : SteeringAgent
         return new DecisionTree(root);
     }
 
+    public void StartRunAwayCooldown()
+    {
+        runAwayCooldownTimer = runAwayCooldownDuration;
+    }
+
     public void TransitionTo(NPCStateID id)
     {
         CurrentStateID = id;
     }
 
+    public void SetAnimatorSpeed(float speed)
+    {
+        animator?.SetFloat("Speed", speed);
+    }
+
+    public void TriggerAttackAnimation()
+    {
+        animator?.SetTrigger("Attack");
+    }
+
     public void MoveToward(Vector3 target)
     {
-        Vector3 force = SteeringBehaviours.Seek(
-            transform.position, rb.linearVelocity, target, maxSpeed);
-        ApplySteering(force);
+        NavigateTo(target);
     }
 
     public void PursuePlayer()
@@ -156,6 +180,8 @@ public class NPCController : SteeringAgent
         return Vector3.Distance(flat1, flat2) <= tolerance;
     }
 
+    public AttackState GetAttackState() => attackState;
+
     private IState GetStateInstance(NPCStateID id) => id switch
     {
         NPCStateID.Patrol => (IState)patrolState,
@@ -164,4 +190,27 @@ public class NPCController : SteeringAgent
         NPCStateID.Attack => attackState,
         _ => patrolState
     };
+
+    private void OnDrawGizmos()
+    {
+        if (enemyType != EnemyType.Guard) return;
+        if (attackState == null) return;
+        if (CurrentStateID != NPCStateID.Attack) return;
+
+        Vector3 lastPos = attackState.LastKnownPosition;
+
+        Gizmos.color = attackState.IsSearchingLastPos
+            ? new Color(1f, 0.3f, 0f, 1f)   // naranja: esta buscando ahí
+            : new Color(1f, 1f, 0f, 0.8f);   // amarillo: persiguiendo, posición desactualizada
+
+        Gizmos.DrawSphere(lastPos, 0.35f);
+
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.6f);
+        Gizmos.DrawLine(transform.position + Vector3.up * 1f, lastPos + Vector3.up * 0.35f);
+
+#if UNITY_EDITOR
+        UnityEditor.Handles.color = Color.white;
+        UnityEditor.Handles.Label(lastPos + Vector3.up * 0.8f, $"Última pos\n{name}");
+#endif
+    }
 }

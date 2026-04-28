@@ -17,14 +17,28 @@ public class PatrolState : IState
             return;
         }
 
-        var candidates = new List<Vector3>(npc.waypoints.Length);
-        foreach (var wp in npc.waypoints) candidates.Add(wp.position);
-
-        int startIdx = RouletteWheelSelector.SelectClosest(npc.transform.position, candidates);
-        npc.CurrentWaypointIndex = startIdx;
         npc.IsIdlePending = false;
 
-        Debug.Log($"[{npc.name}] → PATROL (inicio en waypoint {startIdx})");
+        // Si viene de Attack, retomar desde el ultimo waypoint guardado
+        if (npc.LastPatrolWaypointIndex >= 0)
+        {
+            npc.CurrentWaypointIndex = npc.LastPatrolWaypointIndex;
+            Debug.Log($"[{npc.name}] → PATROL (retomando desde waypoint {npc.CurrentWaypointIndex})");
+        }
+        else
+        {
+            var candidates = new List<Vector3>(npc.waypoints.Length);
+            foreach (var wp in npc.waypoints) candidates.Add(wp.position);
+            int startIdx = RouletteWheelSelector.SelectClosest(npc.transform.position, candidates);
+
+            if (npc.ReachedPosition(npc.waypoints[startIdx].position))
+                startIdx = (startIdx + 1) % npc.waypoints.Length;
+
+            npc.CurrentWaypointIndex = startIdx;
+            Debug.Log($"[{npc.name}] → PATROL (inicio en waypoint {startIdx})");
+        }
+
+        npc.LastPatrolWaypointIndex = -1;
     }
 
     public void OnUpdate()
@@ -34,13 +48,19 @@ public class PatrolState : IState
         Vector3 target = npc.waypoints[npc.CurrentWaypointIndex].position;
         npc.MoveToward(target);
 
+        float speed = npc.Velocity.magnitude / npc.maxSpeed;
+        npc.SetAnimatorSpeed(speed);
+
         if (npc.ReachedPosition(target))
             AdvanceWaypoint();
     }
 
     public void OnExit()
     {
+        // Guardar waypoint actual antes de salir
+        npc.LastPatrolWaypointIndex = npc.CurrentWaypointIndex;
         npc.StopAgent();
+        npc.SetAnimatorSpeed(0f);
     }
 
     private void AdvanceWaypoint()
