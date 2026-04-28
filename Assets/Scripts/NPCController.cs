@@ -129,7 +129,7 @@ public class NPCController : SteeringAgent
 
     public void MoveToward(Vector3 target)
     {
-        NavigateTo(target);
+        MoveDirectly(target);
     }
 
     public void PursuePlayer()
