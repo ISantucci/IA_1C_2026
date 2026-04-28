@@ -53,13 +53,8 @@ public abstract class SteeringAgent : MonoBehaviour
             maxSpeed
         );
 
-        float avoidMag = avoidance.magnitude;
+        Vector3 totalForce = desiredForce + avoidance;
 
-        float seekScale = avoidMag > 0.1f
-            ? Mathf.Clamp01(1f - avoidMag / (maxForce * 1.5f))
-            : 1f;
-
-        Vector3 totalForce = desiredForce * seekScale + avoidance * 2f;
         totalForce = Vector3.ClampMagnitude(totalForce, maxForce);
 
         Vector3 acceleration = totalForce / Mathf.Max(mass, 0.01f);
@@ -71,17 +66,17 @@ public abstract class SteeringAgent : MonoBehaviour
         rb.linearVelocity = newVel;
 
         Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        if (flatVel.sqrMagnitude > 0.5f)   
+
+        if (flatVel.sqrMagnitude > 0.05f)
         {
             Quaternion targetRot = Quaternion.LookRotation(flatVel);
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRot,
-                Time.deltaTime * 8f   
+                Time.deltaTime * 8f
             );
         }
     }
-
     public void StopAgent()
     {
         rb.linearVelocity = Vector3.zero;

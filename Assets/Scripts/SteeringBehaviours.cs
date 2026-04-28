@@ -54,18 +54,13 @@ public static class SteeringBehaviours
         float avoidStrength = maxSpeed * 3f;
         Vector3 castOrigin = pos + Vector3.up * 0.5f;
 
-        // Direccion perpendicular al forward (eje horizontal)
-        // usada para calcular hacia que lado esquivar
         Vector3 perpendicular = Vector3.Cross(Vector3.up, forward).normalized;
 
-        // ── Feeler central ────────────────────────────────────────────────
         if (Physics.SphereCast(castOrigin, detectionRadius, forward,
                 out RaycastHit cHit, detectionLength, obstacleLayer))
         {
             float urgency = 1f - cHit.distance / detectionLength;
 
-            // Determinar si esquivar por derecha o izquierda
-            // segun en que lado esta el obstaculo respecto al forward
             float side = Vector3.Dot(cHit.normal, perpendicular);
             Vector3 avoidDir = side >= 0f ? perpendicular : -perpendicular;
 
@@ -75,7 +70,6 @@ public static class SteeringBehaviours
         float shortLen = detectionLength * 0.75f;
         float sideRad = detectionRadius * 0.6f;
 
-        // ── Feeler izquierdo ──────────────────────────────────────────────
         Vector3 leftDir = Quaternion.Euler(0, -40f, 0) * forward;
         if (Physics.SphereCast(castOrigin, sideRad, leftDir,
                 out RaycastHit lHit, shortLen, obstacleLayer))
@@ -84,7 +78,6 @@ public static class SteeringBehaviours
             avoidance += perpendicular * avoidStrength * urgency * 0.7f;
         }
 
-        // ── Feeler derecho ────────────────────────────────────────────────
         Vector3 rightDir = Quaternion.Euler(0, 40f, 0) * forward;
         if (Physics.SphereCast(castOrigin, sideRad, rightDir,
                 out RaycastHit rHit, shortLen, obstacleLayer))

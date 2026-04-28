@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
     {
         if (gameOver) return;
         gameOver = true;
-        Debug.Log("[GameManager] ¡VICTORIA! El jugador llegó al punto B.");
+        Debug.Log("[GameManager] VICTORIA");
         winPanel?.SetActive(true);
         Time.timeScale = 0f;
     }
@@ -45,7 +45,7 @@ public class GameManager : MonoBehaviour
     {
         if (gameOver) return;
         gameOver = true;
-        Debug.Log("[GameManager] DERROTA. El jugador fue capturado.");
+        Debug.Log("[GameManager] DERROTA");
         Object.FindFirstObjectByType<PlayerController>()?.SetGameOver();
         losePanel?.SetActive(true);
         Time.timeScale = 0f;

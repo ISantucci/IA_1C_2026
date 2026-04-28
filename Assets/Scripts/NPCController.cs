@@ -200,8 +200,8 @@ public class NPCController : SteeringAgent
         Vector3 lastPos = attackState.LastKnownPosition;
 
         Gizmos.color = attackState.IsSearchingLastPos
-            ? new Color(1f, 0.3f, 0f, 1f)   // naranja: esta buscando ahí
-            : new Color(1f, 1f, 0f, 0.8f);   // amarillo: persiguiendo, posición desactualizada
+            ? new Color(1f, 0.3f, 0f, 1f)   
+            : new Color(1f, 1f, 0f, 0.8f);  
 
         Gizmos.DrawSphere(lastPos, 0.35f);
 

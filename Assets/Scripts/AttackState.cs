@@ -107,14 +107,14 @@ public class AttackState : IState
         {
             phase = Phase.Pursuing;
             lostSightTimer = 0f;
-            Debug.Log($"[{npc.name}] ¡Player reencontrado! Reanudando persecución");
+            Debug.Log($"[{npc.name}] Reanudando persecución");
             return;
         }
 
         if (searchTimer >= SearchDuration)
         {
             phase = Phase.Returning;
-            Debug.Log($"[{npc.name}] Búsqueda agotada → volviendo a patrulla");
+            Debug.Log($"[{npc.name}] volviendo a patrulla");
         }
     }
 
@@ -124,7 +124,7 @@ public class AttackState : IState
         {
             phase = Phase.Pursuing;
             lostSightTimer = 0f;
-            Debug.Log($"[{npc.name}] ¡Player reencontrado durante retorno! Persiguiendo");
+            Debug.Log($"[{npc.name}] Persiguiendo");
             return;
         }
 
