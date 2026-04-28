@@ -70,15 +70,14 @@ public abstract class SteeringAgent : MonoBehaviour
 
         rb.linearVelocity = newVel;
 
-        if (rb.linearVelocity.sqrMagnitude > 0.05f)
+        Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        if (flatVel.sqrMagnitude > 0.5f)   
         {
-            Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             Quaternion targetRot = Quaternion.LookRotation(flatVel);
-
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRot,
-                Time.deltaTime * 10f
+                Time.deltaTime * 8f   
             );
         }
     }

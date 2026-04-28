@@ -71,6 +71,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            rb.angularVelocity = Vector3.zero;
             animator?.SetFloat("Speed", 0f);
         }
     }
