@@ -19,23 +19,18 @@ public class PatrolState : IState
 
         npc.IsIdlePending = false;
 
-        // Si viene de Attack, retomar desde el ultimo waypoint guardado
         if (npc.LastPatrolWaypointIndex >= 0)
         {
             npc.CurrentWaypointIndex = npc.LastPatrolWaypointIndex;
-            Debug.Log($"[{npc.name}] → PATROL (retomando desde waypoint {npc.CurrentWaypointIndex})");
+            Debug.Log($"[{npc.name}] → PATROL (retomando waypoint {npc.CurrentWaypointIndex})");
         }
         else
         {
-            var candidates = new List<Vector3>(npc.waypoints.Length);
-            foreach (var wp in npc.waypoints) candidates.Add(wp.position);
-            int startIdx = RouletteWheelSelector.SelectClosest(npc.transform.position, candidates);
-
+            int startIdx = SelectStartWaypoint();
             if (npc.ReachedPosition(npc.waypoints[startIdx].position))
                 startIdx = (startIdx + 1) % npc.waypoints.Length;
-
             npc.CurrentWaypointIndex = startIdx;
-            Debug.Log($"[{npc.name}] → PATROL (inicio en waypoint {startIdx})");
+            Debug.Log($"[{npc.name}] → PATROL (waypoint {startIdx})");
         }
 
         npc.LastPatrolWaypointIndex = -1;
@@ -46,21 +41,34 @@ public class PatrolState : IState
         if (!waypointsValid) return;
 
         Vector3 target = npc.waypoints[npc.CurrentWaypointIndex].position;
-        npc.MoveToward(target);
-
-        float speed = npc.Velocity.magnitude / npc.maxSpeed;
-        npc.SetAnimatorSpeed(speed);
+        npc.NavigateTo(target);
+        npc.SetAnimatorSpeed(npc.Velocity.magnitude / npc.maxSpeed);
 
         if (npc.ReachedPosition(target))
+        {
+            npc.RegisterWaypointVisit(npc.CurrentWaypointIndex);
             AdvanceWaypoint();
+        }
     }
 
     public void OnExit()
     {
-        // Guardar waypoint actual antes de salir
         npc.LastPatrolWaypointIndex = npc.CurrentWaypointIndex;
         npc.StopAgent();
         npc.SetAnimatorSpeed(0f);
+    }
+
+    private int SelectStartWaypoint()
+    {
+        var positions = new List<Vector3>(npc.waypoints.Length);
+        var visitTimes = new List<float>(npc.waypoints.Length);
+        for (int i = 0; i < npc.waypoints.Length; i++)
+        {
+            positions.Add(npc.waypoints[i].position);
+            visitTimes.Add(npc.GetLastVisitTime(i));
+        }
+        return RouletteWheelSelector.SelectWithVisitHistory(
+            npc.transform.position, positions, visitTimes);
     }
 
     private void AdvanceWaypoint()
@@ -73,10 +81,7 @@ public class PatrolState : IState
                 npc.CurrentWaypointIndex--;
                 OnCycleComplete();
             }
-            else
-            {
-                npc.CurrentWaypointIndex++;
-            }
+            else npc.CurrentWaypointIndex++;
         }
         else
         {
@@ -86,10 +91,7 @@ public class PatrolState : IState
                 npc.CurrentWaypointIndex++;
                 OnCycleComplete();
             }
-            else
-            {
-                npc.CurrentWaypointIndex--;
-            }
+            else npc.CurrentWaypointIndex--;
         }
     }
 
@@ -97,7 +99,6 @@ public class PatrolState : IState
     {
         npc.PatrolCycleCount++;
         Debug.Log($"[{npc.name}] Ciclo #{npc.PatrolCycleCount}");
-
         if (npc.PatrolCycleCount >= npc.idleAfterPatrolCycles)
         {
             npc.PatrolCycleCount = 0;

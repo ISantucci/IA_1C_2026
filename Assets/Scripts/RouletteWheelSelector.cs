@@ -43,4 +43,25 @@ public static class RouletteWheelSelector
             weights.Add(Vector3.Distance(threat, c));
         return Select(weights);
     }
+
+    // 3 factores por waypoint, todos dinámicos:
+    // Factor 1 — recencia de visita (dinámico: crece con el tiempo sin visitar)
+    // Factor 2 — distancia inversa  (dinámico: cambia al moverse el NPC)
+    // Factor 3 — ruido aleatorio    (dinámico: distinto en cada llamada)
+    public static int SelectWithVisitHistory(
+        Vector3 origin,
+        IList<Vector3> candidates,
+        IList<float> lastVisitTimes)
+    {
+        var weights = new List<float>(candidates.Count);
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            float dist = Vector3.Distance(origin, candidates[i]);
+            float wDist = dist < 0.01f ? 1000f : 1f / dist;
+            float wRecency = Mathf.Clamp((Time.time - lastVisitTimes[i]) / 10f, 0.1f, 3f);
+            float wNoise = Random.Range(0.5f, 1.5f);
+            weights.Add(wDist * wRecency * wNoise);
+        }
+        return Select(weights);
+    }
 }
