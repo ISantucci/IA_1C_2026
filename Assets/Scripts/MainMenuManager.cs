@@ -12,7 +12,7 @@ public class MainMenuManager : MonoBehaviour
     public TMP_Text playButtonText;
 
     [Header("Datos")]
-    public string gameTitle = "NOMBRE DEL JUEGO";
+    public string gameTitle = "Hide and Escape";
     public string gameSubtitle = "Un juego de sigilo y estrategia";
 
     private CanvasGroup canvasGroup;
@@ -38,7 +38,7 @@ public class MainMenuManager : MonoBehaviour
     {
         if (gameTitleText != null) gameTitleText.text = gameTitle;
         if (subtitleText != null) subtitleText.text = gameSubtitle;
-        if (playButtonText != null) playButtonText.text = "JUGAR";
+        if (playButtonText != null) playButtonText.text = "PLAY";
 
         playButton?.onClick.AddListener(OnPlayClicked);
     }
