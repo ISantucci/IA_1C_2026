@@ -9,7 +9,10 @@ public class FlockManager : MonoBehaviour
     public GameObject flockAgentPrefab;
     public int agentCount = 8;
     public float spawnRadius = 4f;
-    private float spawnHeight = 0.5f;
+    [Tooltip("Altura de vuelo fija de los drones (la Y queda congelada en el Rigidbody del FlockAgent).")]
+    public float spawnHeight = 2f;
+    [Tooltip("Punto desde el que spawnean los drones. Si está vacío, usa la posición de este objeto.")]
+    [SerializeField] private Transform spawnCenter;
 
     [Header("Referencias")]
     [SerializeField] private Transform player;
@@ -60,13 +63,23 @@ public class FlockManager : MonoBehaviour
             return;
         }
 
+        Vector3 center = spawnCenter != null ? spawnCenter.position : transform.position;
+
         for (int i = 0; i < agentCount; i++)
         {
-            Vector3 pos = transform.position + Random.insideUnitSphere * spawnRadius;
+            Vector3 pos = center + Random.insideUnitSphere * spawnRadius;
             pos.y = spawnHeight;
             var go = Instantiate(flockAgentPrefab, pos, Quaternion.identity);
             var agent = go.GetComponent<FlockAgent>();
-            if (agent != null) Agents.Add(agent);
+            if (agent != null)
+            {
+                Agents.Add(agent);
+            }
+            else
+            {
+                Debug.LogError($"[FlockManager] El prefab '{flockAgentPrefab.name}' NO tiene el componente FlockAgent. " +
+                               "Por eso los agentes no se mueven. Revisá el prefab asignado.", go);
+            }
         }
 
         if (debugLogs)
