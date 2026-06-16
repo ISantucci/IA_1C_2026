@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(LineOfSight))]
@@ -20,6 +20,7 @@ public class FlockAgent : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        rb.isKinematic = false;
         los = GetComponent<LineOfSight>();
 
         rb.constraints = RigidbodyConstraints.FreezeRotationX

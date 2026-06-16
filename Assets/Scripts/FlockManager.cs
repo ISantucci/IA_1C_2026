@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class FlockManager : MonoBehaviour
@@ -9,6 +9,10 @@ public class FlockManager : MonoBehaviour
     public GameObject flockAgentPrefab;
     public int agentCount = 8;
     public float spawnRadius = 4f;
+    private float spawnHeight = 0.5f;
+
+    [Header("Referencias")]
+    [SerializeField] private Transform player;
 
     [Header("Pesos")]
     public float separationWeight = 1.8f;
@@ -19,35 +23,78 @@ public class FlockManager : MonoBehaviour
     public float separationRadius = 1.5f;
     public float neighborRadius = 5f;
 
+    [Header("Deteccion")]
+    [SerializeField] private float playerSpottedMemoryTime = 2f;
+
+    [Header("Debug")]
+    [SerializeField] private bool debugLogs = false;
+    [SerializeField] private bool forceScatterDebug = false;
+
     public List<FlockAgent> Agents { get; private set; } = new();
     public bool PlayerSpotted { get; private set; }
     public Transform Player { get; private set; }
 
+    private float _lastTimePlayerSeen = -999f;
+
     private void Awake()
     {
         Instance = this;
-        Player = Object.FindFirstObjectByType<PlayerController>()?.transform;
+        if (player == null)
+            player = Object.FindFirstObjectByType<PlayerController>()?.transform;
+        Player = player;
+
+        if (Player == null)
+            Debug.LogWarning("[FlockManager] Player es null. Asignarlo en el Inspector (campo Referencias > Player).");
     }
 
     private void Start()
     {
+        if (flockAgentPrefab == null)
+        {
+            Debug.LogWarning("[FlockManager] flockAgentPrefab no está asignado. No se spawnearán agentes.");
+            return;
+        }
+        if (agentCount <= 0)
+        {
+            Debug.LogWarning("[FlockManager] agentCount es 0 o negativo. No se spawnearán agentes.");
+            return;
+        }
+
         for (int i = 0; i < agentCount; i++)
         {
             Vector3 pos = transform.position + Random.insideUnitSphere * spawnRadius;
-            pos.y = transform.position.y;
+            pos.y = spawnHeight;
             var go = Instantiate(flockAgentPrefab, pos, Quaternion.identity);
             var agent = go.GetComponent<FlockAgent>();
             if (agent != null) Agents.Add(agent);
         }
+
+        if (debugLogs)
+            Debug.Log($"[FlockManager] Agentes registrados: {Agents.Count}/{agentCount}");
     }
 
     private void Update()
     {
-        PlayerSpotted = false;
+        if (forceScatterDebug)
+        {
+            PlayerSpotted = true;
+            return;
+        }
+
+        bool anySeesPlayer = false;
         foreach (var a in Agents)
         {
-            if (a.CanSeePlayer) { PlayerSpotted = true; break; }
+            if (a.CanSeePlayer) { anySeesPlayer = true; break; }
         }
+
+        if (anySeesPlayer)
+            _lastTimePlayerSeen = Time.time;
+
+        bool previousSpotted = PlayerSpotted;
+        PlayerSpotted = anySeesPlayer || (Time.time - _lastTimePlayerSeen <= playerSpottedMemoryTime);
+
+        if (debugLogs && PlayerSpotted != previousSpotted)
+            Debug.Log($"[FlockManager] PlayerSpotted cambió a: {PlayerSpotted}");
     }
 
     public Vector3 GetSeparation(FlockAgent agent)
