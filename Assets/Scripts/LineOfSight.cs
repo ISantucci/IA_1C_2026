@@ -7,6 +7,8 @@ public class LineOfSight : MonoBehaviour
     public float angle = 110f;
     public LayerMask obsMask;
 
+    public LayerMask ObstacleMask => obsMask;
+
     public bool HasLOS(Transform target)
     {
         if (target == null) return false;

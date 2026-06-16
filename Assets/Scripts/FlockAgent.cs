@@ -16,12 +16,15 @@ public class FlockAgent : MonoBehaviour
 
     public Vector3 Velocity => rb.linearVelocity;
     public bool CanSeePlayer { get; private set; }
+    public LayerMask ObstacleMask => los != null ? los.ObstacleMask : default;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = false;
         los = GetComponent<LineOfSight>();
+        if (los.ObstacleMask.value == 0)
+            Debug.LogWarning($"[FlockAgent] {name}: LineOfSight.obsMask está vacía. El Obstacle Avoidance en Scatter no funcionará.");
 
         rb.constraints = RigidbodyConstraints.FreezeRotationX
                        | RigidbodyConstraints.FreezeRotationZ
@@ -95,8 +98,29 @@ public class FlockScatterState : IState
         var fm = FlockManager.Instance;
         if (fm?.Player == null) return;
 
-        Vector3 flee = (agent.transform.position - fm.Player.position).normalized * agent.moveSpeed * 2f;
-        Vector3 sep = fm.GetSeparation(agent) * fm.separationWeight;
+        const float checkDistance = 2f;
+
+        Vector3 fleeDir = agent.transform.position - fm.Player.position;
+        fleeDir.y = 0f;
+        fleeDir.Normalize();
+
+        LayerMask mask = agent.ObstacleMask;
+        if (mask.value != 0 && Physics.Raycast(agent.transform.position, fleeDir, checkDistance, mask))
+        {
+            Vector3 right = Vector3.Cross(Vector3.up, fleeDir);
+            right.y = 0f;
+            right.Normalize();
+
+            bool rightClear = !Physics.Raycast(agent.transform.position, right,  checkDistance, mask);
+            bool leftClear  = !Physics.Raycast(agent.transform.position, -right, checkDistance, mask);
+
+            if      (rightClear) fleeDir = right;
+            else if (leftClear)  fleeDir = -right;
+            // else: corner cerrado — mantener flee original
+        }
+
+        Vector3 flee = fleeDir * agent.moveSpeed * 2f;
+        Vector3 sep  = fm.GetSeparation(agent) * fm.separationWeight;
 
         agent.ApplyForce(flee + sep);
     }
