@@ -31,6 +31,7 @@ public class PlayerController : MonoBehaviour
 
         rb.constraints = RigidbodyConstraints.FreezeRotationX
                        | RigidbodyConstraints.FreezeRotationZ
+                       | RigidbodyConstraints.FreezeRotationY
                        | RigidbodyConstraints.FreezePositionY;
 
         idleState = new PlayerIdleState(this);

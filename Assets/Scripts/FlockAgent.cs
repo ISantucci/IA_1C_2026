@@ -116,7 +116,6 @@ public class FlockScatterState : IState
 
             if      (rightClear) fleeDir = right;
             else if (leftClear)  fleeDir = -right;
-            // else: corner cerrado — mantener flee original
         }
 
         Vector3 flee = fleeDir * agent.moveSpeed * 2f;
