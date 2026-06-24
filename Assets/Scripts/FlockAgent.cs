@@ -190,27 +190,33 @@ public class FlockAgent : MonoBehaviour
 
     public bool HasClearPath(Vector3 target)
     {
-        Vector3 origin = transform.position + Vector3.up * 0.5f;
-        Vector3 dir = target - origin;
+        Vector3 flatTarget = FlattenToAgentHeight(target);
+        Vector3 origin = transform.position;
+        Vector3 dir = flatTarget - origin;
+
+        if (dir.sqrMagnitude < 0.0001f) return true;
+
         return !Physics.Raycast(origin, dir.normalized, dir.magnitude, obstacleLayer);
     }
 
     public void NavigateTo(Vector3 target)
     {
-        if (HasClearPath(target))
+        Vector3 flatTarget = FlattenToAgentHeight(target);
+
+        if (HasClearPath(flatTarget))
         {
             currentPath = null;
-            MoveDirectly(target);
+            MoveDirectly(flatTarget);
             return;
         }
 
-        bool targetMoved = Vector3.Distance(target, lastPathTarget) > PathRefreshMoveDist;
+        bool targetMoved = Vector3.Distance(flatTarget, lastPathTarget) > PathRefreshMoveDist;
         if (currentPath == null || pathRefreshTimer >= PathRefreshInterval || targetMoved)
         {
-            currentPath = AStar.FindPath(transform.position, target);
+            currentPath = AStar.FindPath(transform.position, flatTarget);
             pathIndex = 0;
             pathRefreshTimer = 0f;
-            lastPathTarget = target;
+            lastPathTarget = flatTarget;
         }
 
         if (currentPath != null && currentPath.Count > 0)
@@ -219,12 +225,17 @@ public class FlockAgent : MonoBehaviour
                    ReachedPosition(currentPath[pathIndex], 0.6f))
                 pathIndex++;
 
-            MoveDirectly(currentPath[pathIndex]);
+            MoveDirectly(FlattenToAgentHeight(currentPath[pathIndex]));
         }
         else
         {
-            MoveDirectly(target);
+            MoveDirectly(flatTarget);
         }
+    }
+
+    private Vector3 FlattenToAgentHeight(Vector3 target)
+    {
+        return new Vector3(target.x, transform.position.y, target.z);
     }
 
     private void MoveDirectly(Vector3 target)
