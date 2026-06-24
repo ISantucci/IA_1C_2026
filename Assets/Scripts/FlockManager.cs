@@ -152,4 +152,15 @@ public class FlockManager : MonoBehaviour
         }
         return count > 0 ? (avg / count).normalized : Vector3.zero;
     }
+    public int CountNeighborsNear(FlockAgent agent, float radius)
+    {
+        int count = 0;
+        foreach (var other in Agents)
+        {
+            if (other == agent) continue;
+            float dist = Vector3.Distance(agent.transform.position, other.transform.position);
+            if (dist <= radius) count++;
+        }
+        return count;
+    }
 }

@@ -175,6 +175,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FlockAgent
   moveSpeed: 3.5
   maxForce: 8
+  waypoints: []
+  isolationThreshold: 5
+  isolationCheckRadius: 4
+  requiredNeighborCount: 2
+  avoidanceDistance: 2.5
+  avoidanceRadius: 0.35
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1001 &86386645243043195
 PrefabInstance:
   m_ObjectHideFlags: 0
