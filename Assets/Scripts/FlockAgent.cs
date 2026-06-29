@@ -155,7 +155,10 @@ public class FlockAgent : MonoBehaviour
     private IState DecideState()
     {
         if (FlockManager.Instance.PlayerSpotted) return scatterState;
-        if (IsIsolated && waypoints != null && waypoints.Length >= 2) return patrolState;
+        // Aislado → comportamiento solitario SIEMPRE (con waypoints si los hay,
+        // o volviendo al centro del flock como fallback). Así el comportamiento
+        // en solitario es demostrable aunque no existan waypoints en la escena.
+        if (IsIsolated) return patrolState;
         return normalState;
     }
 
@@ -332,24 +335,42 @@ public class FlockPatrolState : IState
 
     public FlockPatrolState(FlockAgent agent) => this.agent = agent;
 
+    private bool HasWaypoints =>
+        agent.waypoints != null && agent.waypoints.Length >= 2;
+
     public void OnEnter()
     {
-        int closest = 0;
-        float bestDist = float.MaxValue;
-
-        for (int i = 0; i < agent.waypoints.Length; i++)
+        if (HasWaypoints)
         {
-            float d = Vector3.Distance(agent.transform.position, agent.waypoints[i].position);
-            if (d < bestDist) { bestDist = d; closest = i; }
-        }
+            int closest = 0;
+            float bestDist = float.MaxValue;
 
-        agent.CurrentWaypointIndex = closest;
-        Debug.Log($"[{agent.name}] Aislado → patrullando (waypoint {closest})");
+            for (int i = 0; i < agent.waypoints.Length; i++)
+            {
+                float d = Vector3.Distance(agent.transform.position, agent.waypoints[i].position);
+                if (d < bestDist) { bestDist = d; closest = i; }
+            }
+
+            agent.CurrentWaypointIndex = closest;
+            Debug.Log($"[{agent.name}] Aislado → patrullando (waypoint {closest})");
+        }
+        else
+        {
+            Debug.LogWarning($"[{agent.name}] Aislado sin waypoints → fallback: volviendo al centro del flock.");
+        }
     }
 
     public void OnUpdate()
     {
-        if (agent.waypoints == null || agent.waypoints.Length < 2) return;
+        // Fallback solitario sin waypoints: volver al centro del flock.
+        // Sigue siendo un comportamiento individual y demostrable.
+        if (!HasWaypoints)
+        {
+            if (FlockManager.Instance == null) return;
+            Vector3 home = FlockManager.Instance.GetFlockCenter(agent);
+            agent.NavigateTo(home);
+            return;
+        }
 
         Vector3 target = agent.waypoints[agent.CurrentWaypointIndex].position;
         agent.NavigateTo(target);

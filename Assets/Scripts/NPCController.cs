@@ -23,6 +23,12 @@ public class NPCController : SteeringAgent
     public float attackRange = 1.8f;
     public float combatSpeedMultiplier = 1.5f;
 
+    [Header("Velocidad por estado")]
+    [Tooltip("Multiplicador de velocidad en Patrol (relativo a BaseMaxSpeed). <1 = más lento.")]
+    public float patrolSpeedMultiplier = 0.7f;
+    [Tooltip("Multiplicador de velocidad en RunAway (relativo a BaseMaxSpeed). >1 = más rápido.")]
+    public float runAwaySpeedMultiplier = 1.4f;
+
     [Header("Scout Cooldown")]
     public float runAwayCooldownDuration = 5f;
 
@@ -40,6 +46,11 @@ public class NPCController : SteeringAgent
 
     public LineOfSight LOS { get; private set; }
     public bool PlayerVisible => LOS != null && LOS.HasLOS(player);
+
+    // Velocidad base estable, capturada una sola vez en Awake. No contaminable.
+    public float BaseMaxSpeed { get; private set; }
+    public void SetSpeedMultiplier(float multiplier) => maxSpeed = BaseMaxSpeed * multiplier;
+    public void ResetMaxSpeed() => maxSpeed = BaseMaxSpeed;
 
     private StateMachine fsm;
     public NPCStateID CurrentStateID { get; private set; }
@@ -74,6 +85,7 @@ public class NPCController : SteeringAgent
     protected override void Awake()
     {
         base.Awake();
+        BaseMaxSpeed = maxSpeed;
         LOS = GetComponent<LineOfSight>();
         animator = GetComponentInChildren<Animator>();
 

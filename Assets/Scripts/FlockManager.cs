@@ -152,6 +152,24 @@ public class FlockManager : MonoBehaviour
         }
         return count > 0 ? (avg / count).normalized : Vector3.zero;
     }
+    /// <summary>
+    /// Centro promedio del flock (excluyendo opcionalmente un agente). Si no hay otros
+    /// agentes, devuelve la posición del FlockManager. Usado como destino de fallback
+    /// para un boid aislado que no tiene waypoints donde patrullar.
+    /// </summary>
+    public Vector3 GetFlockCenter(FlockAgent exclude = null)
+    {
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (var a in Agents)
+        {
+            if (a == null || a == exclude) continue;
+            sum += a.transform.position;
+            count++;
+        }
+        return count > 0 ? sum / count : transform.position;
+    }
+
     public int CountNeighborsNear(FlockAgent agent, float radius)
     {
         int count = 0;

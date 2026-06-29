@@ -10,6 +10,8 @@ public class PatrolState : IState
 
     public void OnEnter()
     {
+        npc.SetSpeedMultiplier(npc.patrolSpeedMultiplier);
+
         waypointsValid = npc.waypoints != null && npc.waypoints.Length >= 2;
         if (!waypointsValid)
         {
