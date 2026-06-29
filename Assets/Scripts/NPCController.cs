@@ -2,7 +2,7 @@
 using UnityEngine;
 
 public enum EnemyType { Guard, Scout }
-public enum NPCStateID { Patrol, Idle, RunAway, Attack, Search }
+public enum NPCStateID { Patrol, Idle, RunAway, Attack, Search, Alert }
 
 [RequireComponent(typeof(LineOfSight))]
 public class NPCController : SteeringAgent
@@ -26,6 +26,10 @@ public class NPCController : SteeringAgent
     [Header("Scout Cooldown")]
     public float runAwayCooldownDuration = 5f;
 
+    [Header("Alerta (solo Guards)")]
+    [SerializeField] private float alertDuration = 0.75f;
+    public float AlertDuration => alertDuration;
+
     public int CurrentWaypointIndex { get; set; }
     public int LastPatrolWaypointIndex { get; set; } = -1;
     public bool PatrolForward { get; set; } = true;
@@ -45,6 +49,7 @@ public class NPCController : SteeringAgent
     private RunAwayState runAwayState;
     private AttackState attackState;
     private SearchState searchState;
+    private AlertState alertState;
 
     private DecisionTree decisionTree;
     private Animator animator;
@@ -77,6 +82,7 @@ public class NPCController : SteeringAgent
         runAwayState = new RunAwayState(this);
         attackState = new AttackState(this);
         searchState = new SearchState(this);
+        alertState = new AlertState(this);
 
         fsm = new StateMachine();
         decisionTree = BuildDecisionTree();
@@ -123,13 +129,24 @@ public class NPCController : SteeringAgent
 
     private DecisionTree BuildDecisionTree()
     {
-        var doAttack = new ActionNode(() => TransitionTo(NPCStateID.Attack));
+        var doAlert = new ActionNode(() => TransitionTo(NPCStateID.Alert));
         var doRunAway = new ActionNode(() => TransitionTo(NPCStateID.RunAway));
         var doNothing = new ActionNode(() => { });
 
+        // Guard: solo entra a Alert si viene de Patrol o Idle.
+        // Si ya está en Alert/Attack/Search, no reinicia nada (esos estados
+        // gestionan su propia salida).
+        var onGuardVisible = new ConditionNode(
+            () => CurrentStateID == NPCStateID.Patrol
+               || CurrentStateID == NPCStateID.Idle,
+            doAlert,
+            doNothing
+        );
+
+        // Guard → Alert (con la guarda de arriba); Scout → RunAway directo (como antes).
         var onPlayerVisible = new ConditionNode(
             () => enemyType == EnemyType.Guard,
-            doAttack,
+            onGuardVisible,
             doRunAway
         );
 
@@ -272,6 +289,7 @@ public class NPCController : SteeringAgent
         NPCStateID.RunAway => runAwayState,
         NPCStateID.Attack => attackState,
         NPCStateID.Search => searchState,
+        NPCStateID.Alert => alertState,
         _ => patrolState
     };
 
