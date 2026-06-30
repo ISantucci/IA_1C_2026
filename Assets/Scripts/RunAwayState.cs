@@ -11,13 +11,11 @@ public class RunAwayState : IState
     }
 
     private readonly NPCController npc;
-    private float originalSpeed;
 
     private Vector3? currentDestination;
     private bool headingToGuard;
     private float guardCheckTimer;
 
-    private const float SpeedMultiplier = 1.4f;
     private const float SafeDistance = 12f;
     private const float GuardCheckDelay = 2f;  
     private const float ArrivalTolerance = 1.2f;
@@ -26,8 +24,7 @@ public class RunAwayState : IState
 
     public void OnEnter()
     {
-        originalSpeed = npc.maxSpeed;
-        npc.maxSpeed = originalSpeed * SpeedMultiplier;
+        npc.SetSpeedMultiplier(npc.runAwaySpeedMultiplier);
         headingToGuard = false;
         guardCheckTimer = 0f;
 
@@ -67,19 +64,24 @@ public class RunAwayState : IState
 
         if (arrivedAtDest && (distToPlayer >= SafeDistance || !npc.PlayerVisible))
         {
+            // Arrancar el cooldown YA, en el frame de decisión, para que el
+            // DecisionTree no re-dispare RunAway antes de que corra OnExit
+            // (evita desync CurrentStateID↔FSM y velocidad residual).
+            npc.StartRunAwayCooldown();
             npc.TransitionTo(NPCStateID.Patrol);
             return;
         }
 
         if (distToPlayer >= SafeDistance && !npc.PlayerVisible)
         {
+            npc.StartRunAwayCooldown();
             npc.TransitionTo(NPCStateID.Patrol);
         }
     }
 
     public void OnExit()
     {
-        npc.maxSpeed = originalSpeed;
+        npc.ResetMaxSpeed();
         npc.StopAgent();
         npc.SetAnimatorSpeed(0f);
         npc.StartRunAwayCooldown();
